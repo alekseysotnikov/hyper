@@ -58,8 +58,10 @@
    ^Semaphore semaphore shutdown-renderer*]
   (let [br-out         (when compress? (br/byte-array-out-stream))
         br-stream      (when br-out (br/compress-out-stream br-out :window-size 18))
-        headers        (cond-> {"Content-Type" "text/event-stream"}
-                         compress? (assoc "Content-Encoding" "br"))
+        headers     (cond-> {"Content-Type"      "text/event-stream"
+                             "Cache-Control"     "no-cache, no-transform"
+                             "X-Accel-Buffering" "no"}
+                            compress? (assoc "Content-Encoding" "br"))
         throttle-ms    (long (or (get @app-state* :render-throttle-ms)
                                  default-render-throttle-ms))
         tab-write-lock (.writeLock (get-in @app-state* [:tabs tab-id :renderer :rw-lock]))]
