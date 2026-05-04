@@ -42,4 +42,5 @@
          :exec-fn     kaocha.runner/exec-fn
          :exec-args   {:randomize? false
                        :fail-fast? true}}
-  :dev  {:extra-deps {io.github.tonsky/clj-reload {:mvn/version "1.0.0"}}}}}
+  :dev  {:extra-deps {io.github.tonsky/clj-reload {:mvn/version "1.0.0"}
+                      io.github.tonsky/clojure-plus {:mvn/version "1.7.2"}}}}}
