@@ -2,9 +2,7 @@
   "Action handling for hyper applications.
 
    Actions are server-side functions triggered by client interactions."
-  (:require [clojure.set]
-            [compact-uuids.core :as uuid]
-            [hyper.context :as context]
+  (:require [compact-uuids.core :as uuid]
             [taoensso.telemere :as t]))
 
 (defn register-action!
@@ -18,7 +16,7 @@
    - :as  — a human-readable name for the action, useful for testing"
   ([app-state* session-id tab-id action-fn]
    (register-action! app-state* session-id tab-id action-fn
-                     (str "act_" (uuid/str (java.util.UUID/randomUUID)))
+                     (str "action-" (uuid/str (java.util.UUID/randomUUID)))
                      nil))
   ([app-state* session-id tab-id action-fn action-id]
    (register-action! app-state* session-id tab-id action-fn action-id nil))
@@ -32,50 +30,34 @@
                                        (:as opts) (assoc :as (:as opts))))
                            (update-in [:actions-by-tab tab-id]
                                       (fnil conj #{}) action-id))))
-   (when-let [acc context/*registered-action-ids*]
-     (swap! acc conj action-id))
    action-id))
 
 (defn execute-action!
   "Execute an action by ID with error handling.
    When client-params are provided they are passed to the action fn."
-  ([app-state* action-id]
-   (execute-action! app-state* action-id nil))
-  ([app-state* action-id client-params]
-   (if-let [action-data (get-in @app-state* [:actions action-id])]
-     (let [{:keys [fn]} action-data]
-       (t/catch->error! :hyper.error/execute-action
-                        (fn client-params))
-       true)
-     (do
-       (t/log! {:level :warn
-                :id    :hyper.error/action-not-found
-                :data  {:hyper/action-id action-id}
-                :msg   "Action not found"})
-       (throw (ex-info "Action not found" {:hyper/action-id action-id}))))))
-
-(defn sweep-stale-tab-actions!
-  "Remove actions for a tab that were not re-registered during the last
-   render cycle.  `live-action-ids` is the set of IDs collected by
-   `*registered-action-ids*` during render.  Actions in that set are
-   kept; any other action belonging to this tab is removed.
-
-   This replaces the old cleanup-before-render pattern with a
-   cleanup-after-render approach that eliminates the window where
-   actions are missing."
-  [app-state* tab-id live-action-ids]
-  (swap! app-state* (fn [state]
-                      (let [all-tab-ids (get-in state [:actions-by-tab tab-id] #{})
-                            stale-ids   (clojure.set/difference all-tab-ids live-action-ids)]
-                        (if (seq stale-ids)
-                          (-> state
-                              (update :actions #(apply dissoc % stale-ids))
-                              (assoc-in [:actions-by-tab tab-id] live-action-ids))
-                          (assoc-in state [:actions-by-tab tab-id] live-action-ids)))))
-  nil)
+  ([app-state* tab-id action-id]
+   (execute-action! app-state* tab-id  action-id nil))
+  ([app-state* tab-id action-id client-params]
+   (let [tab-read-lock (.readLock (get-in @app-state* [:tabs tab-id :renderer :rw-lock]))]
+     (.lock tab-read-lock)
+     (try
+       (if-let [action-data (get-in @app-state* [:actions action-id])]
+         (let [{:keys [fn]} action-data]
+           (t/catch->error! :hyper.error/execute-action
+                            (fn client-params))
+           true)
+         (do
+           (t/log! {:level :warn
+                    :id    :hyper.error/action-not-found
+                    :data  {:hyper/action-id action-id}
+                    :msg   "Action not found"})
+           (throw (ex-info "Action not found" {:hyper/action-id  action-id
+                                               :hyper/action-ids (keys (get-in @app-state* [:actions]))}))))
+       (finally
+         (.unlock tab-read-lock))))))
 
 (defn cleanup-tab-actions!
-  "Remove all actions for a tab.  Used during tab disconnect."
+  "Remove all actions for a tab."
   [app-state* tab-id]
   (swap! app-state* (fn [state]
                       (let [action-ids (get-in state [:actions-by-tab tab-id])]

@@ -4,3 +4,6 @@
 /.nrepl-port
 .envrc
 /.lsp/
+.idea
+hyper.iml
+.qwen

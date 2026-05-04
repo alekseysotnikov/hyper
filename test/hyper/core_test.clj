@@ -68,7 +68,7 @@
   (testing "tab-cursor creates cursor to tab state"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-2"
-          tab-id     "test_tab_1"]
+          tab-id     "test-tab-1"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       (binding [context/*request* {:hyper/session-id session-id
                                    :hyper/tab-id     tab-id
@@ -86,7 +86,7 @@
   (testing "action registers and returns Datastar expression string"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-3"
-          tab-id     "test_tab_2"
+          tab-id     "test-tab-2"
           executed   (atom false)]
       (binding [context/*request* {:hyper/session-id session-id
                                    :hyper/tab-id     tab-id
@@ -108,7 +108,7 @@
   [routes]
   (let [app-state* (atom (state/init-state))
         session-id "test-session-nav"
-        tab-id     "test_tab_nav"
+        tab-id     "test-tab-nav"
         router     (ring/router (mapv (fn [[path data]] [path data]) routes)
                                 {:conflicts nil})]
     (state/get-or-create-tab! app-state* session-id tab-id)
@@ -232,7 +232,7 @@
   (testing "tab-cursor with default value initializes nil path"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-6"
-          tab-id     "test_tab_3"]
+          tab-id     "test-tab-3"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       (binding [context/*request* {:hyper/session-id session-id
                                    :hyper/tab-id     tab-id
@@ -244,7 +244,7 @@
   (testing "tab-cursor with default doesn't overwrite existing value"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-7"
-          tab-id     "test_tab_4"]
+          tab-id     "test-tab-4"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       (swap! app-state* assoc-in [:tabs tab-id :data :items] [1 2 3])
       (binding [context/*request* {:hyper/session-id session-id
@@ -256,7 +256,7 @@
   (testing "nested path with default value"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-8"
-          tab-id     "test_tab_5"]
+          tab-id     "test-tab-5"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       (binding [context/*request* {:hyper/session-id session-id
                                    :hyper/tab-id     tab-id
@@ -273,7 +273,7 @@
   (testing "path-cursor reads/writes to route query params"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-path-1"
-          tab-id     "test_tab_path_1"]
+          tab-id     "test-tab-path-1"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       ;; Seed route state
       (state/set-tab-route! app-state* tab-id
@@ -291,7 +291,7 @@
   (testing "path-cursor with default doesn't overwrite existing"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-path-2"
-          tab-id     "test_tab_path_2"]
+          tab-id     "test-tab-path-2"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       (state/set-tab-route! app-state* tab-id
                             {:name        :search :path         "/search"
@@ -305,7 +305,7 @@
   (testing "path-cursor swap! works"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-path-3"
-          tab-id     "test_tab_path_3"]
+          tab-id     "test-tab-path-3"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       (state/set-tab-route! app-state* tab-id
                             {:name :home :path "/" :path-params {} :query-params {}})
@@ -322,7 +322,7 @@
   (testing "$value client param generates @post expression with hyper.encodeClientParams"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-cp"
-          tab-id     "test_tab_cp"]
+          tab-id     "test-tab-cp"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       (binding [context/*request* {:hyper/session-id session-id
                                    :hyper/tab-id     tab-id
@@ -340,7 +340,7 @@
   (testing "$checked client param generates @post expression"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-cp"
-          tab-id     "test_tab_cp"]
+          tab-id     "test-tab-cp"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       (binding [context/*request* {:hyper/session-id session-id
                                    :hyper/tab-id     tab-id
@@ -355,7 +355,7 @@
   (testing "$key client param generates @post expression"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-cp"
-          tab-id     "test_tab_cp"]
+          tab-id     "test-tab-cp"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       (binding [context/*request* {:hyper/session-id session-id
                                    :hyper/tab-id     tab-id
@@ -370,7 +370,7 @@
   (testing "$form-data client param generates @post expression"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-cp"
-          tab-id     "test_tab_cp"]
+          tab-id     "test-tab-cp"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       (binding [context/*request* {:hyper/session-id session-id
                                    :hyper/tab-id     tab-id
@@ -386,7 +386,7 @@
   (testing "no client params uses simple @post expression"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-cp"
-          tab-id     "test_tab_cp"]
+          tab-id     "test-tab-cp"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       (binding [context/*request* {:hyper/session-id session-id
                                    :hyper/tab-id     tab-id
@@ -398,7 +398,7 @@
   (testing "multiple client params in single action"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-cp"
-          tab-id     "test_tab_cp"]
+          tab-id     "test-tab-cp"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       (binding [context/*request* {:hyper/session-id session-id
                                    :hyper/tab-id     tab-id
@@ -413,7 +413,7 @@
   (testing "JS string with client params injects guard before @post"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-js"
-          tab-id     "test_tab_js"]
+          tab-id     "test-tab-js"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       (binding [context/*request* {:hyper/session-id session-id
                                    :hyper/tab-id     tab-id
@@ -435,7 +435,7 @@
   (testing "empty :when string treated as no JS injection"
     (let [app-state* (atom (state/init-state))
           session-id "test-session-js"
-          tab-id     "test_tab_js"]
+          tab-id     "test-tab-js"]
       (state/get-or-create-tab! app-state* session-id tab-id)
       (binding [context/*request* {:hyper/session-id session-id
                                    :hyper/tab-id     tab-id

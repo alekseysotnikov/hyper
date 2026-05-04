@@ -3,22 +3,26 @@
             [hyper.actions :as actions]
             [hyper.state :as state]))
 
+(def initialized-state (-> (state/init-state)
+                           (assoc-in [:tabs "tab1" :renderer :rw-lock]
+                                     #java.util.concurrent.locks.ReentrantReadWriteLock[true])))
+
 (deftest register-action-test
   (testing "registers an action and returns ID"
-    (let [app-state* (atom (state/init-state))
+    (let [app-state* (atom initialized-state)
           session-id "test-session-1"
-          tab-id     "test_tab_1"
+          tab-id     "test-tab-1"
           action-fn  (fn [] :executed)
           action-id  (actions/register-action! app-state* session-id tab-id action-fn)]
       (is (string? action-id))
-      (is (.startsWith action-id "act_"))
+      (is (.startsWith action-id "action-"))
       (is (contains? (:actions @app-state*) action-id))
       (is (= session-id (get-in @app-state* [:actions action-id :session-id])))
       (is (= tab-id (get-in @app-state* [:actions action-id :tab-id])))
       (is (fn? (get-in @app-state* [:actions action-id :fn])))))
 
   (testing "generates unique IDs"
-    (let [app-state* (atom (state/init-state))
+    (let [app-state* (atom initialized-state)
           action-fn  (fn [] :executed)
           id1        (actions/register-action! app-state* "sess1" "tab1" action-fn)
           id2        (actions/register-action! app-state* "sess1" "tab1" action-fn)]
@@ -26,35 +30,35 @@
 
 (deftest execute-action-test
   (testing "executes registered action"
-    (let [app-state* (atom (state/init-state))
+    (let [app-state* (atom initialized-state)
           executed   (atom false)
           action-fn  (fn [_] (reset! executed true))
           action-id  (actions/register-action! app-state* "sess1" "tab1" action-fn)]
-      (actions/execute-action! app-state* action-id)
+      (actions/execute-action! app-state* "tab1" action-id)
       (is @executed)))
 
   (testing "action can access closures"
-    (let [app-state*     (atom (state/init-state))
+    (let [app-state*     (atom initialized-state)
           result         (atom nil)
           captured-value 42
           action-fn      (fn [_] (reset! result captured-value))
           action-id      (actions/register-action! app-state* "sess1" "tab1" action-fn)]
-      (actions/execute-action! app-state* action-id)
+      (actions/execute-action! app-state* "tab1" action-id)
       (is (= 42 @result))))
 
   (testing "throws exception for missing action"
-    (let [app-state* (atom (state/init-state))]
+    (let [app-state* (atom initialized-state)]
       (is (thrown? Exception
-                   (actions/execute-action! app-state* "nonexistent-action"))))))
+                   (actions/execute-action! app-state* "tab1" "nonexistent-action"))))))
 
 (deftest cleanup-tab-actions-test
   (testing "removes all actions for a tab"
-    (let [app-state*  (atom (state/init-state))
-          tab-id      "test_tab_cleanup"
+    (let [app-state*  (atom initialized-state)
+          tab-id      "test-tab-cleanup"
           action-fn   (fn [_] :executed)
           action-id-1 (actions/register-action! app-state* "sess1" tab-id action-fn)
           action-id-2 (actions/register-action! app-state* "sess1" tab-id action-fn)
-          action-id-3 (actions/register-action! app-state* "sess1" "other_tab" action-fn)]
+          action-id-3 (actions/register-action! app-state* "sess1" "other-tab" action-fn)]
       (is (contains? (:actions @app-state*) action-id-1))
       (is (contains? (:actions @app-state*) action-id-2))
       (is (contains? (:actions @app-state*) action-id-3))
@@ -67,9 +71,9 @@
 
 (deftest test-execute-action-with-client-params
   (testing "executes action with client params passed through"
-    (let [app-state* (atom (state/init-state))
+    (let [app-state* (atom initialized-state)
           result     (atom nil)
           action-fn  (fn [params] (reset! result (:value params)))
           action-id  (actions/register-action! app-state* "sess1" "tab1" action-fn)]
-      (actions/execute-action! app-state* action-id {:value "test-value"})
+      (actions/execute-action! app-state* "tab1" action-id {:value "test-value"})
       (is (= "test-value" @result)))))
