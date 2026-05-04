@@ -94,11 +94,14 @@
                      "Cache-Control"     "no-cache, no-transform"
                      "X-Accel-Buffering" "no"
                      "Content-Encoding"  "br"}]]]
-      (let [captured-response (atom nil)]
+      (let [init-state (-> (state/init-state)
+                           (assoc-in [:tabs "tab-test" :renderer :rw-lock]
+                                     (java.util.concurrent.locks.ReentrantReadWriteLock. true)))
+            captured-response (atom nil)]
         (with-redefs [http-kit/send! (fn [_channel response _close-after-send?]
                                        (reset! captured-response response)
                                        false)]
-          (#'server/-renderer-loop! (atom (state/init-state))
+          (#'server/-renderer-loop! (atom init-state)
                                     "sess-test"
                                     "tab-test"
                                     ::channel
