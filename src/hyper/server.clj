@@ -123,9 +123,7 @@
   "Drain queued execute-script effects and send them over SSE.
    Returns true/nil on success, false when the channel is closed."
   [pending-scripts* tab-id channel br-out br-stream]
-  (let [scripts (let [ss @pending-scripts*]
-                  (reset! pending-scripts* [])
-                  ss)]
+  (let [[scripts _] (swap-vals! pending-scripts* (constantly []))]
     (try
       (when (seq scripts)
         (send-sse! channel br-out br-stream
@@ -173,31 +171,27 @@
             (.acquire semaphore)
             (.drainPermits semaphore)
             (when-not (realized? shutdown-renderer*)
-              (let [current-signals (get-in @app-state* [:tabs tab-id :signals])
-                    sig-patches     (when (and current-signals
-                                               (not= current-signals last-sent-signals))
-                                      (signal/changed-signals last-sent-signals current-signals))
-                    full-render?    (let [needed? @full-render-needed*]
-                                      (reset! full-render-needed* false)
-                                      needed?)
-                    dirty-ids       (let [ids @pending-partials*]
-                                      (reset! pending-partials* #{})
-                                      ids)
-                    sent?           (try
-                                      (if (and (seq dirty-ids)
-                                               (not full-render?)
-                                               (not (seq sig-patches)))
-                                        (handle-partial-render app-state* tab-id dirty-ids
-                                                               channel br-out br-stream)
-                                        (handle-full-render app-state* session-id tab-id sig-patches
-                                                            trigger-partial! pending-partials*
-                                                            channel br-out br-stream))
-                                      (catch Throwable e
-                                        (t/error! e {:id   :hyper.error/renderer
-                                                     :data {:hyper/tab-id tab-id}})
-                                        nil))
-                    script-sent?    (drain-pending-scripts! pending-scripts* tab-id
-                                                            channel br-out br-stream)]
+              (let [current-signals  (get-in @app-state* [:tabs tab-id :signals])
+                    sig-patches      (when (and current-signals
+                                                (not= current-signals last-sent-signals))
+                                       (signal/changed-signals last-sent-signals current-signals))
+                    [full-render? _] (swap-vals! full-render-needed* (constantly false))
+                    [dirty-ids _]    (swap-vals! pending-partials* (constantly #{}))
+                    sent?            (try
+                                       (if (and (seq dirty-ids)
+                                                (not full-render?)
+                                                (not (seq sig-patches)))
+                                         (handle-partial-render app-state* tab-id dirty-ids
+                                                                channel br-out br-stream)
+                                         (handle-full-render app-state* session-id tab-id sig-patches
+                                                             trigger-partial! pending-partials*
+                                                             channel br-out br-stream))
+                                       (catch Throwable e
+                                         (t/error! e {:id   :hyper.error/renderer
+                                                      :data {:hyper/tab-id tab-id}})
+                                         nil))
+                    script-sent?     (drain-pending-scripts! pending-scripts* tab-id
+                                                             channel br-out br-stream)]
                 ;; sent? is true (ok), nil (no render-fn or error), false (channel closed)
                 ;; script-sent? follows the same convention
                 (when-not (or (false? sent?) (false? script-sent?))
